@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
-import App from './App'
+import App from '../App'
 
 // Strictly typed mock of SimpleCompass
 vi.mock('./SimpleCompass.tsx', () => {
@@ -60,22 +60,20 @@ describe('App component', () => {
     it('passes mapHeading to SimpleCompass (mocked)', () => {
         render(<App />)
 
-        const heading = screen.getByRole('heading', { level: 2 })
-        expect(heading.textContent).toContain('45')
+        const mockText = screen.getByText(/MockCompass heading:/i)
+        expect(mockText.textContent).toContain('45')
     })
 
     it('updates heading when SimpleCompass calls setMapHeading', () => {
         render(<App />)
 
-        // screen.debug()
-        const svg: SVGElement = screen.getByTestId('mdnorth-icon') as unknown as SVGElement
-        expect(svg).toBeInTheDocument()
-        fireEvent.click(svg)
+        const button = screen.getByRole('button', { name: /set heading from child/i })
+        fireEvent.click(button)
 
         const heading = screen.getByRole('heading', { name: /pointing to/i })
-        expect(heading.textContent).toContain('315')
+        expect(heading.textContent).toContain('123')
 
         const input = screen.getByRole('spinbutton') as HTMLInputElement
-        expect(input.value).toBe('315')
+        expect(input.value).toBe('123')
     })
 })
