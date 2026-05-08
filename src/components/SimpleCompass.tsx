@@ -74,7 +74,6 @@ function SimpleCompass({ mapHeading, setMapHeading }: SimpleCompassProps) {
                 $angle={needleAngle}
             >
                 <MdNorth
-                    data-testid="mdnorth-icon"
                     style={{height: '100%', width: '100%'}}
                     onClick={handleClick}
                     onDoubleClick={handleDoubleClick}

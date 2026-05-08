@@ -1,79 +1,92 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
-import App from '../App'
+import { render, fireEvent } from '@testing-library/react'
+import SimpleCompass from './SimpleCompass'
+import type { SimpleCompassProps } from '../types/simpleCompassProps'
+import { vi } from 'vitest'
 
-// Strictly typed mock of SimpleCompass
-vi.mock('./SimpleCompass.tsx', () => {
-    const MockCompass = ({
-                             mapHeading,
-                             setMapHeading
-                         }: {
-        mapHeading: number
-        setMapHeading: (n: number) => void
-    }) => (
-        <div>
-            <p>MockCompass heading: {mapHeading}</p>
-            <button onClick={() => setMapHeading(123)}>Set Heading From Child</button>
-        </div>
-    )
-    return { default: MockCompass }
-})
+describe('SimpleCompass', () => {
+    const setup = (mapHeading: number = 0) => {
+        const setMapHeading = vi.fn<(heading: number) => void>()
+        const props: SimpleCompassProps = { mapHeading, setMapHeading }
+        const { container } = render(<SimpleCompass {...props} />)
 
-describe('App component', () => {
-    it('renders initial heading text', () => {
-        render(<App />)
+        // The MdNorth icon is the only SVG inside the wrapper
+        // const svgIcon = screen.getByRole('img', {hidden: true}) as SVGSVGElement
+        // const svgIcon = screen.getByTestId('mdnorth-icon', {hidden: true}) as SVGSVGElement
+        const svgIcon = container.querySelector('svg');
+        if (svgIcon) {
+            const wrapper = svgIcon.parentElement as HTMLDivElement
 
-        const heading = screen.getByRole('heading', { name: /pointing to/i })
-        expect(heading).toBeInTheDocument()
-        expect(heading.textContent).toContain('45')
+            return {setMapHeading, svgIcon, wrapper}
+        }
+        throw('svgIcon not found')
+    }
+
+    it('renders the compass icon', () => {
+        const { svgIcon } = setup()
+        expect(svgIcon).toBeInTheDocument()
     })
 
-    it('renders the input with the current heading value', () => {
-        render(<App />)
+    it('calls setMapHeading on click (rotation)', () => {
+        const { setMapHeading, svgIcon, wrapper } = setup(0)
 
-        const input = screen.getByRole('spinbutton') as HTMLInputElement
-        expect(input.value).toBe('45')
+        // Mock bounding box for deterministic rotation math
+        vi.spyOn(wrapper, 'getBoundingClientRect').mockReturnValue({
+            left: 0,
+            top: 0,
+            width: 300,
+            height: 300,
+            right: 300,
+            bottom: 300,
+            x: 0,
+            y: 0,
+            toJSON: () => {}
+        })
+
+        const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            clientX: 300,
+            clientY: 150
+        })
+
+        svgIcon.dispatchEvent(clickEvent)
+
+        expect(setMapHeading).toHaveBeenCalledTimes(1)
+        const heading = setMapHeading.mock.calls[0][0]
+        expect(typeof heading).toBe('number')
     })
 
-    it('updates heading when user types a new value', () => {
-        render(<App />)
+    it('resets heading to 0 on double-click', () => {
+        const { setMapHeading, svgIcon } = setup(123)
 
-        const input = screen.getByRole('spinbutton') as HTMLInputElement
+        fireEvent.doubleClick(svgIcon)
 
-        fireEvent.change(input, { target: { value: '90' } })
-
-        const heading = screen.getByRole('heading', { name: /pointing to/i })
-        expect(heading.textContent).toContain('90')
+        expect(setMapHeading).toHaveBeenCalledWith(0)
     })
 
-    it('wraps heading values using modulo 360', () => {
-        render(<App />)
+    it('updates heading while dragging (mouse move with button pressed)', () => {
+        const { setMapHeading, svgIcon, wrapper } = setup(0)
 
-        const input = screen.getByRole('spinbutton') as HTMLInputElement
+        vi.spyOn(wrapper, 'getBoundingClientRect').mockReturnValue({
+            left: 0,
+            top: 0,
+            width: 300,
+            height: 300,
+            right: 300,
+            bottom: 300,
+            x: 0,
+            y: 0,
+            toJSON: () => {}
+        })
 
-        fireEvent.change(input, { target: { value: '370' } })
+        const moveEvent = {
+            bubbles: true,
+            clientX: 200,
+            clientY: 200,
+            buttons: 1
+        } as unknown as React.MouseEvent<Element>
 
-        const heading = screen.getByRole('heading', { name: /pointing to/i })
-        expect(heading.textContent).toContain('10')
-    })
+        fireEvent.mouseMove(svgIcon, moveEvent)
 
-    it('passes mapHeading to SimpleCompass (mocked)', () => {
-        render(<App />)
-
-        const mockText = screen.getByText(/MockCompass heading:/i)
-        expect(mockText.textContent).toContain('45')
-    })
-
-    it('updates heading when SimpleCompass calls setMapHeading', () => {
-        render(<App />)
-
-        const button = screen.getByRole('button', { name: /set heading from child/i })
-        fireEvent.click(button)
-
-        const heading = screen.getByRole('heading', { name: /pointing to/i })
-        expect(heading.textContent).toContain('123')
-
-        const input = screen.getByRole('spinbutton') as HTMLInputElement
-        expect(input.value).toBe('123')
+        expect(setMapHeading).toHaveBeenCalled()
     })
 })
