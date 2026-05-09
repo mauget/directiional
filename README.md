@@ -3,6 +3,8 @@ This project is a simple interactive compass dial built using HTML, CSS, and Jav
 to rotate it by dragging the mouse, or clicking on a sector on the dial. 
 This provides an engaging way to input a degree direction, with the dial visually indicating the current orientation. 
 
+![Simple Interactive Compass Dial](images/SimpleCompass.png)
+
 The compass dial is designed to be responsive and user-friendly, making it easy for users to interact with it 
 in various applications. A numeric input field is also included, allowing users to enter a specific degree value 
 directly, which will update the dial accordingly. The field also indicates the degree position of the dial after the 
